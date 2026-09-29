@@ -158,7 +158,7 @@ st.markdown("""
 
 
 def render_5w1h_tab(data):
-    """Render the 5W1H Information Matrix tab."""
+    """Render the exhaustive 5W1H, Idea Generation & Sentence Construction tab."""
     if "error" in data:
         st.error(f"Analysis Error: {data.get('error')}")
         if "raw_response" in data:
@@ -166,58 +166,106 @@ def render_5w1h_tab(data):
                 st.text(data["raw_response"])
         return
 
-    # Title and Summary
+    # ── Title & Summary ──
     st.markdown(f"""
     <div class="info-card animate-in">
         <h3>📌 {data.get('title', 'Article Analysis')}</h3>
-        <p><strong>English:</strong> {data.get('summary', 'N/A')}</p>
-        <p><strong>বাংলা:</strong> {data.get('summary_bn', 'N/A')}</p>
+        <p><strong>🇬🇧 English:</strong> {data.get('summary', 'N/A')}</p>
+        <p><strong>🇧🇩 বাংলা:</strong> {data.get('summary_bn', 'N/A')}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Metrics
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("📊 Word Count", data.get("word_count", "N/A"))
-    with col2:
-        st.metric("📈 Reading Level", data.get("reading_level", "N/A"))
-    with col3:
-        st.metric("📰 Genre", data.get("genre", "N/A"))
-    with col4:
-        st.metric("🎯 Tone", data.get("tone", "N/A"))
+    # ── Metrics ──
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1: st.metric("📊 Words", data.get("word_count", "N/A"))
+    with c2: st.metric("📈 Level", data.get("reading_level", "N/A"))
+    with c3: st.metric("📰 Genre", data.get("genre", "N/A"))
+    with c4: st.metric("🎯 Tone", data.get("tone", "N/A"))
+    with c5: st.metric("👥 Audience", data.get("target_audience", "N/A")[:20])
 
     st.markdown("---")
 
-    # 5W1H Grid
-    st.subheader("🔍 5W1H Information Matrix")
+    # ── 5W1H Deep Dive ──
+    st.subheader("🔍 5W1H Deep Information Matrix")
+    st.caption("প্রতিটি প্রশ্নের বিস্তারিত উত্তর — তথ্য, সম্পর্ক, প্রসঙ্গ সহ")
 
     five_w = data.get("five_w_one_h", {})
     labels = {
-        "who": ("👤 WHO / কে", "#FF6B6B"),
-        "what": ("📋 WHAT / কী", "#4da3ff"),
+        "who": ("👤 WHO / কে জড়িত", "#FF6B6B"),
+        "what": ("📋 WHAT / কী ঘটেছে", "#4da3ff"),
         "when": ("🕐 WHEN / কখন", "#ffd93d"),
         "where": ("📍 WHERE / কোথায়", "#28a745"),
         "why": ("❓ WHY / কেন", "#fd7e14"),
         "how": ("⚙️ HOW / কীভাবে", "#a88beb")
     }
 
-    cols = st.columns(2)
-    for idx, (key, (label, color)) in enumerate(labels.items()):
-        with cols[idx % 2]:
-            item = five_w.get(key, {})
-            eng = item.get("english", "N/A") if isinstance(item, dict) else str(item)
-            bn = item.get("bangla", "N/A") if isinstance(item, dict) else ""
-            st.markdown(f"""
-            <div class="w5h1-card" style="border-left-color: {color};">
-                <div class="w5h1-label" style="color: {color};">{label}</div>
-                <p style="color: #d0d0d0; margin: 0.3rem 0;">🇬🇧 {eng}</p>
-                <p style="color: #a0a0a0; margin: 0.3rem 0; font-style: italic;">🇧🇩 {bn}</p>
-            </div>
-            """, unsafe_allow_html=True)
+    for key, (label, color) in labels.items():
+        item = five_w.get(key, {})
+        if not isinstance(item, dict):
+            continue
 
-    st.markdown("---")
+        eng = item.get("english", "N/A")
+        bn = item.get("bangla", "N/A")
 
-    # Core Thesis
+        st.markdown(f"""
+        <div class="w5h1-card" style="border-left-color: {color}; margin-bottom: 1rem;">
+            <div class="w5h1-label" style="color: {color}; font-size: 1.1rem;">{label}</div>
+            <p style="color: #d0d0d0; line-height: 1.8;">🇬🇧 {eng}</p>
+            <p style="color: #a0a0a0; line-height: 1.8; font-style: italic;">🇧🇩 {bn}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Sub-details
+        sub_cols = st.columns(2)
+        with sub_cols[0]:
+            if item.get("key_entities"):
+                st.markdown("**🏷️ Key Entities:**")
+                for e in item["key_entities"]:
+                    st.markdown(f"  • {e}")
+            if item.get("key_events"):
+                st.markdown("**📌 Key Events:**")
+                for e in item["key_events"]:
+                    st.markdown(f"  • {e}")
+            if item.get("timeline"):
+                st.markdown("**📅 Timeline:**")
+                for t in item["timeline"]:
+                    st.markdown(f"  • {t}")
+            if item.get("locations"):
+                st.markdown("**📍 Locations:**")
+                for l in item["locations"]:
+                    st.markdown(f"  • {l}")
+            if item.get("root_causes"):
+                st.markdown("**🔥 Root Causes:**")
+                for r in item["root_causes"]:
+                    st.markdown(f"  • {r}")
+            if item.get("processes"):
+                st.markdown("**⚙️ Processes:**")
+                for p in item["processes"]:
+                    st.markdown(f"  • {p}")
+
+        with sub_cols[1]:
+            if item.get("relationships"):
+                st.markdown(f"**🔗 Relationships:** {item['relationships']}")
+            if item.get("central_conflict"):
+                st.markdown(f"**⚔️ Central Conflict:** {item['central_conflict']}")
+                st.markdown(f"🇧🇩 {item.get('central_conflict_bn', '')}")
+            if item.get("historical_context"):
+                st.markdown(f"**📜 Historical Context:** {item['historical_context']}")
+                st.markdown(f"🇧🇩 {item.get('historical_context_bn', '')}")
+            if item.get("geopolitical_context"):
+                st.markdown(f"**🌐 Geopolitical:** {item['geopolitical_context']}")
+                st.markdown(f"🇧🇩 {item.get('geopolitical_context_bn', '')}")
+            if item.get("hidden_motivations"):
+                st.markdown(f"**🕵️ Hidden Motivations:** {item['hidden_motivations']}")
+                st.markdown(f"🇧🇩 {item.get('hidden_motivations_bn', '')}")
+            if item.get("data_points"):
+                st.markdown("**📊 Data Points:**")
+                for d in item["data_points"]:
+                    st.markdown(f"  • {d}")
+
+        st.markdown("---")
+
+    # ── Core Thesis ──
     st.subheader("🎯 Core Thesis & Focus")
     thesis = data.get("core_thesis", {})
 
@@ -225,7 +273,8 @@ def render_5w1h_tab(data):
     <div class="info-card">
         <h3>💡 Main Argument</h3>
         <p>🇬🇧 {thesis.get('main_argument', 'N/A')}</p>
-        <p style="color: #a0a0a0; font-style: italic;">🇧🇩 {thesis.get('main_argument_bn', 'N/A')}</p>
+        <p style="color: #a0a0a0;">🇧🇩 {thesis.get('main_argument_bn', 'N/A')}</p>
+        <p style="color: #888; font-size: 0.85rem;">📍 Thesis Position: {thesis.get('thesis_position', 'N/A')}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -233,37 +282,117 @@ def render_5w1h_tab(data):
     <div class="info-card">
         <h3>🔗 Focus Maintenance Strategy</h3>
         <p>🇬🇧 {thesis.get('focus_maintenance', 'N/A')}</p>
-        <p style="color: #a0a0a0; font-style: italic;">🇧🇩 {thesis.get('focus_maintenance_bn', 'N/A')}</p>
+        <p style="color: #a0a0a0;">🇧🇩 {thesis.get('focus_maintenance_bn', 'N/A')}</p>
     </div>
     """, unsafe_allow_html=True)
 
     if thesis.get("supporting_points"):
         st.markdown("**📌 Supporting Points:**")
         for pt in thesis["supporting_points"]:
-            st.markdown(f"  • {pt}")
+            st.markdown(f"  ✅ {pt}")
+
+    if thesis.get("counterarguments"):
+        st.markdown("**🔄 Counterarguments Addressed:**")
+        for ca in thesis["counterarguments"]:
+            st.markdown(f"  ⚡ {ca}")
 
     st.markdown(f"""
     <div class="info-card">
         <h3>🗣️ Rhetorical Strategy</h3>
         <p>🇬🇧 {thesis.get('rhetorical_strategy', 'N/A')}</p>
-        <p style="color: #a0a0a0; font-style: italic;">🇧🇩 {thesis.get('rhetorical_strategy_bn', 'N/A')}</p>
+        <p style="color: #a0a0a0;">🇧🇩 {thesis.get('rhetorical_strategy_bn', 'N/A')}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Basic Facts
     st.markdown("---")
+
+    # ── Idea Generation Map (NEW!) ──
+    st.subheader("🧠 Idea Generation Map — ধারণা কীভাবে তৈরি হয়েছে")
+    idea_map = data.get("idea_generation_map", {})
+
+    st.markdown(f"""
+    <div class="info-card">
+        <p>🇬🇧 {idea_map.get('description', 'N/A')}</p>
+        <p style="color: #a0a0a0;">🇧🇩 {idea_map.get('description_bn', 'N/A')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if idea_map.get("idea_flow"):
+        st.markdown("**📶 Idea Flow Stages:**")
+        for stage in idea_map["idea_flow"]:
+            with st.expander(f"🔹 {stage.get('stage', '')}"):
+                st.markdown(f"**Idea:** {stage.get('idea', '')}")
+                st.markdown(f"**🇧🇩:** {stage.get('idea_bn', '')}")
+                st.markdown(f"**Technique:** {stage.get('technique', '')}")
+                st.markdown(f"**🇧🇩:** {stage.get('technique_bn', '')}")
+
+    if idea_map.get("paragraph_to_idea_mapping"):
+        st.markdown("**📄 Paragraph → Idea Mapping:**")
+        for mapping in idea_map["paragraph_to_idea_mapping"]:
+            st.markdown(f"  📌 {mapping}")
+
+    st.markdown("---")
+
+    # ── Sentence Construction Analysis (NEW!) ──
+    st.subheader("🏗️ Sentence Construction — কীভাবে বাক্য তৈরি হচ্ছে")
+    sca = data.get("sentence_construction_analysis", {})
+
+    st.markdown(f"""
+    <div class="info-card">
+        <p>🇬🇧 {sca.get('description', 'N/A')}</p>
+        <p style="color: #a0a0a0;">🇧🇩 {sca.get('description_bn', 'N/A')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if sca.get("construction_patterns"):
+        st.markdown("**🔧 Construction Patterns:**")
+        for pattern in sca["construction_patterns"]:
+            with st.expander(f"🔸 {pattern.get('pattern_name', '')} | {pattern.get('pattern_name_bn', '')}"):
+                st.markdown(f"**Raw Fact:** {pattern.get('raw_fact', '')}")
+                st.markdown(f"**Constructed Sentence:** *{pattern.get('constructed_sentence', '')}*")
+                st.markdown("**Construction Steps:**")
+                steps_en = pattern.get("construction_steps", [])
+                steps_bn = pattern.get("construction_steps_bn", [])
+                for i, step in enumerate(steps_en):
+                    bn = steps_bn[i] if i < len(steps_bn) else ""
+                    st.markdown(f"  {step}")
+                    if bn:
+                        st.markdown(f"  🇧🇩 *{bn}*")
+
+    if sca.get("idea_to_sentence_pipeline"):
+        st.markdown(f"""
+        <div class="info-card" style="border-left: 4px solid #ffd93d;">
+            <h3>🔄 Idea → Sentence Pipeline</h3>
+            <p>🇬🇧 {sca['idea_to_sentence_pipeline']}</p>
+            <p style="color: #a0a0a0;">🇧🇩 {sca.get('idea_to_sentence_pipeline_bn', '')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Basic Facts ──
     st.subheader("📋 Basic Facts (অলংকার ছাড়া মূল তথ্য)")
     col_en, col_bn = st.columns(2)
-
     with col_en:
         st.markdown("**🇬🇧 English:**")
         for fact in data.get("basic_facts", []):
             st.markdown(f"  ✦ {fact}")
-
     with col_bn:
         st.markdown("**🇧🇩 বাংলা:**")
         for fact in data.get("basic_facts_bn", []):
             st.markdown(f"  ✦ {fact}")
+
+    # ── Key Takeaways ──
+    if data.get("key_takeaways"):
+        st.markdown("---")
+        st.subheader("🎓 Key Takeaways")
+        col_en, col_bn = st.columns(2)
+        with col_en:
+            for tk in data["key_takeaways"]:
+                st.markdown(f"  💡 {tk}")
+        with col_bn:
+            for tk in data.get("key_takeaways_bn", []):
+                st.markdown(f"  💡 {tk}")
 
 
 def render_vocabulary_tab(data):
@@ -478,7 +607,7 @@ def render_vocab_cards(matrix):
 
 
 def render_clause_tab(data):
-    """Render the Clause & Grammar X-Ray tab."""
+    """Render the comprehensive Clause & Grammar X-Ray tab (15+ sentences)."""
     if "error" in data:
         st.error(f"Clause Analysis Error: {data.get('error')}")
         if "raw_response" in data:
@@ -486,95 +615,135 @@ def render_clause_tab(data):
                 st.text(data["raw_response"])
         return
 
+    # Stats header
+    total = data.get("total_sentences_in_article", "N/A")
+    analyzed = data.get("sentences_analyzed", "N/A")
+    st.markdown(f"""
+    <div class="info-card">
+        <h3>📊 Analysis Coverage</h3>
+        <p>Total sentences in article: <strong>{total}</strong> | Sentences analyzed: <strong>{analyzed}</strong></p>
+    </div>
+    """, unsafe_allow_html=True)
+
     # Overall Style Profile
     profile = data.get("overall_style_profile", {})
     if profile:
+        st.markdown("---")
+        st.subheader("📊 Overall Style Profile")
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1: st.metric("Avg Clauses/Sentence", profile.get("average_clauses_per_sentence", "N/A"))
+        with c2: st.metric("Avg Sentence Length", f"{profile.get('average_sentence_length', 'N/A')} words")
+        with c3: st.metric("Longest Sentence", f"{profile.get('longest_sentence_word_count', 'N/A')} words")
+        with c4: st.metric("Difficulty", profile.get("difficulty_level", "N/A"))
+
         st.markdown(f"""
         <div class="info-card">
-            <h3>📊 Overall Style Profile</h3>
-            <p><strong>Dominant Patterns:</strong> {', '.join(profile.get('dominant_clause_patterns', []))}</p>
-            <p><strong>Avg Clauses/Sentence:</strong> {profile.get('average_clauses_per_sentence', 'N/A')}</p>
-            <p><strong>Difficulty:</strong> {profile.get('difficulty_level', 'N/A')}</p>
-            <p><strong>Style:</strong> {profile.get('style_description', 'N/A')}</p>
-            <p style="color: #a0a0a0; font-style: italic;">🇧🇩 {profile.get('style_description_bn', 'N/A')}</p>
+            <p>🇬🇧 {profile.get('style_description', 'N/A')}</p>
+            <p style="color: #a0a0a0;">🇧🇩 {profile.get('style_description_bn', 'N/A')}</p>
         </div>
         """, unsafe_allow_html=True)
+
+        if profile.get("dominant_clause_patterns"):
+            st.markdown("**🔗 Dominant Patterns:**")
+            for p in profile["dominant_clause_patterns"]:
+                st.markdown(f"  • {p}")
+
+        if profile.get("most_common_connectors"):
+            st.markdown(f"**🔗 Common Connectors:** {', '.join(profile['most_common_connectors'])}")
+
+        if profile.get("writing_lessons"):
+            with st.expander("🎓 Writing Lessons from This Article"):
+                lessons_en = profile.get("writing_lessons", [])
+                lessons_bn = profile.get("writing_lessons_bn", [])
+                for i, lesson in enumerate(lessons_en):
+                    st.markdown(f"**{i+1}.** {lesson}")
+                    if i < len(lessons_bn):
+                        st.markdown(f"   🇧🇩 *{lessons_bn[i]}*")
 
     st.markdown("---")
 
-    # Clause Analysis for each sentence
+    # Individual Sentence Analysis
+    st.subheader("🔬 Sentence-by-Sentence X-Ray")
     analyses = data.get("clause_analysis", [])
+
     for idx, analysis in enumerate(analyses):
-        st.markdown(f"### 🔬 Sentence {analysis.get('sentence_number', idx + 1)}")
+        sent_num = analysis.get("sentence_number", idx + 1)
+        word_count = analysis.get("sentence_length_words", "")
 
-        # Original sentence
-        st.markdown(f"""
-        <div class="clause-box">
-            <p style="color: #ffd93d; font-size: 1.05rem; line-height: 1.8;">
-                "{analysis.get('original_sentence', '')}"
-            </p>
-            <p style="color: #888; margin-top: 0.5rem;">
-                <strong>Syntactic Formula:</strong> <code>{analysis.get('syntactic_formula', '')}</code>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Clause Breakdown
-        st.markdown("**📐 Clause Breakdown:**")
-        for clause in analysis.get("clause_breakdown", []):
-            clause_type = clause.get("clause_type", "")
-            css_class = "clause-independent"
-            if "subordinate" in clause_type.lower() or "adverbial" in clause_type.lower():
-                css_class = "clause-subordinate"
-            elif "relative" in clause_type.lower() or "adjective" in clause_type.lower():
-                css_class = "clause-relative"
-            elif "participial" in clause_type.lower():
-                css_class = "clause-participial"
-
+        with st.expander(
+            f"📝 Sentence #{sent_num} ({word_count} words) — "
+            f"{analysis.get('syntactic_formula', '')[:60]}...",
+            expanded=(idx < 3)  # First 3 expanded by default
+        ):
+            # Original sentence
             st.markdown(f"""
-            <div style="margin: 0.5rem 0; padding: 0.8rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                <span class="clause-tag {css_class}">{clause_type}</span>
-                <span class="clause-tag" style="background: rgba(255,255,255,0.05); color: #a0a0a0;">{clause.get('clause_type_bn', '')}</span>
-                <p style="color: #d0d0d0; margin: 0.5rem 0;">📝 <em>"{clause.get('clause_text', '')}"</em></p>
-                <p style="color: #888; font-size: 0.85rem;">🔧 Function: {clause.get('function', '')}</p>
-                <p style="color: #888; font-size: 0.85rem;">🇧🇩 ভূমিকা: {clause.get('function_bn', '')}</p>
-                {f'<p style="color: #4da3ff; font-size: 0.85rem;">🔗 Connector: <code>{clause.get("connector", "")}</code></p>' if clause.get("connector") else ''}
+            <div class="clause-box">
+                <p style="color: #ffd93d; font-size: 1.05rem; line-height: 1.8;">
+                    "{analysis.get('original_sentence', '')}"
+                </p>
+                <p style="color: #888;">
+                    <strong>Formula:</strong> <code>{analysis.get('syntactic_formula', '')}</code>
+                </p>
             </div>
             """, unsafe_allow_html=True)
 
-        # Beginner vs Editorial Comparison
-        col_beg, col_ed = st.columns(2)
+            # Clause Breakdown
+            st.markdown("**📐 Clause Breakdown:**")
+            for clause in analysis.get("clause_breakdown", []):
+                ct = clause.get("clause_type", "")
+                css = "clause-independent"
+                if "subordinate" in ct.lower() or "adverbial" in ct.lower():
+                    css = "clause-subordinate"
+                elif "relative" in ct.lower() or "adjective" in ct.lower():
+                    css = "clause-relative"
+                elif "participial" in ct.lower():
+                    css = "clause-participial"
 
-        beginner = analysis.get("beginner_version", {})
-        editorial = analysis.get("editorial_technique", {})
+                st.markdown(f"""
+                <div style="margin: 0.5rem 0; padding: 0.8rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <span class="clause-tag {css}">{ct}</span>
+                    <span class="clause-tag" style="background: rgba(255,255,255,0.05); color: #a0a0a0;">{clause.get('clause_type_bn', '')}</span>
+                    <p style="color: #d0d0d0; margin: 0.5rem 0;">📝 <em>"{clause.get('clause_text', '')}"</em></p>
+                    <p style="color: #888; font-size: 0.85rem;">🔧 {clause.get('function', '')}</p>
+                    <p style="color: #888; font-size: 0.85rem;">🇧🇩 {clause.get('function_bn', '')}</p>
+                    {f'<p style="color: #4da3ff; font-size: 0.85rem;">🔗 Connector: <code>{clause.get("connector", "")}</code></p>' if clause.get("connector") else ''}
+                    {f'<p style="color: #28a745; font-size: 0.85rem;">📖 {clause.get("grammar_note", "")}</p>' if clause.get("grammar_note") else ''}
+                    {f'<p style="color: #28a745; font-size: 0.85rem;">🇧🇩 {clause.get("grammar_note_bn", "")}</p>' if clause.get("grammar_note_bn") else ''}
+                </div>
+                """, unsafe_allow_html=True)
 
-        with col_beg:
-            st.markdown("""
-            <div style="background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3);
-                        border-radius: 10px; padding: 1rem;">
-                <h4 style="color: #dc3545;">❌ Beginner Version</h4>
-            """, unsafe_allow_html=True)
-            for sent in beginner.get("sentences", []):
-                st.markdown(f"  • *{sent}*")
-            st.markdown(f"  🇧🇩 *{beginner.get('explanation_bn', '')}*")
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Beginner vs Editorial
+            col_beg, col_ed = st.columns(2)
+            beginner = analysis.get("beginner_version", {})
+            editorial = analysis.get("editorial_technique", {})
 
-        with col_ed:
-            st.markdown(f"""
-            <div style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3);
-                        border-radius: 10px; padding: 1rem;">
-                <h4 style="color: #28a745;">✅ Editorial Technique</h4>
-                <p><strong>{editorial.get('technique_name', '')}</strong></p>
-                <p style="color: #a0a0a0;">{editorial.get('technique_name_bn', '')}</p>
-                <p>{editorial.get('explanation', '')}</p>
-                <p style="color: #a0a0a0; font-style: italic;">🇧🇩 {editorial.get('explanation_bn', '')}</p>
-                <p>Devices: {', '.join(editorial.get('stylistic_devices', []))}</p>
-            </div>
-            """, unsafe_allow_html=True)
+            with col_beg:
+                st.markdown("**❌ Beginner Version:**")
+                for sent in beginner.get("sentences", []):
+                    st.markdown(f"  • *{sent}*")
+                st.markdown(f"  🇧🇩 *{beginner.get('explanation_bn', beginner.get('explanation', ''))}*")
 
-        # Grammar Notes
-        if analysis.get("grammar_notes_bn"):
-            st.info(f"📝 **ব্যাকরণগত নোট:** {analysis['grammar_notes_bn']}")
+            with col_ed:
+                st.markdown(f"**✅ {editorial.get('technique_name', 'Editorial Technique')}:**")
+                st.markdown(f"🇧🇩 {editorial.get('technique_name_bn', '')}")
+                st.markdown(f"{editorial.get('explanation', '')}")
+                st.markdown(f"🇧🇩 *{editorial.get('explanation_bn', '')}*")
+                if editorial.get("stylistic_devices"):
+                    st.markdown(f"Devices: {', '.join(editorial['stylistic_devices'])}")
+                if editorial.get("impact_on_reader"):
+                    st.markdown(f"🎯 Impact: {editorial['impact_on_reader']}")
+                    st.markdown(f"🇧🇩 {editorial.get('impact_on_reader_bn', '')}")
+
+            # Deep dive
+            if analysis.get("grammar_deep_dive_bn"):
+                st.info(f"📝 **গভীর ব্যাকরণ বিশ্লেষণ:** {analysis['grammar_deep_dive_bn']}")
+
+            # Replication template
+            if analysis.get("replication_template"):
+                st.markdown(f"**🔧 Replication Template:** `{analysis['replication_template']}`")
+                if analysis.get("replication_template_bn"):
+                    st.markdown(f"🇧🇩 {analysis['replication_template_bn']}")
 
         st.markdown("---")
 
