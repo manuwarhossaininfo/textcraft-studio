@@ -30,6 +30,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ============================================
+# Google Analytics 4 Integration
+# ============================================
+def inject_ga4():
+    """Inject Google Analytics 4 tracking code into Streamlit app."""
+    GA4_ID = "G-HE6RFMKP45"  # ← আপনার Measurement ID বসান
+    
+    ga_script = f"""
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GA4_ID}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{GA4_ID}', {{
+            'page_title': 'TextCraft Studio',
+            'page_path': window.location.pathname
+        }});
+        
+        // Track tab clicks
+        document.addEventListener('click', function(e) {{
+            if (e.target && e.target.getAttribute('role') === 'tab') {{
+                gtag('event', 'tab_click', {{
+                    'tab_name': e.target.innerText,
+                    'event_category': 'engagement'
+                }});
+            }}
+        }});
+        
+        // Track button clicks
+        document.addEventListener('click', function(e) {{
+            if (e.target && e.target.tagName === 'BUTTON') {{
+                gtag('event', 'button_click', {{
+                    'button_text': e.target.innerText,
+                    'event_category': 'interaction'
+                }});
+            }}
+        }});
+    </script>
+    """
+    
+    from streamlit.components.v1 import html
+    html(ga_script, height=0, width=0)
+
+# Call the function right after page config
+inject_ga4()
 # Load custom CSS
 css_path = Path("assets/style.css")
 if css_path.exists():
