@@ -996,6 +996,48 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Results Tabs
+    if st.session_state.analysis_results:
+        results = st.session_state.analysis_results
+
+        # ========================================================
+        # 📥 ALL-IN-ONE PDF EXPORT BUTTON
+        # ========================================================
+        st.markdown("---")
+        pdf_col1, pdf_col2 = st.columns([3, 1])
+        with pdf_col1:
+            st.markdown("### 📑 Full Masterclass PDF Export")
+            st.markdown("*সম্পূর্ণ অ্যানালাইসিস, ভোকাবুলারি, ক্লজ ব্যবচ্ছেদ ও রাইটিং ব্লুপ্রিন্ট একটি প্রফেশনাল PDF ফাইলে ডাউনলোড করুন।*")
+        
+        with pdf_col2:
+            try:
+                from modules.pdf_generator import TextCraftPDFReport
+                pdf_gen = TextCraftPDFReport()
+                
+                # Check if transformer results exist
+                tr_res = st.session_state.get("transformer_result", None)
+                pdf_bytes = pdf_gen.generate(results, tr_res)
+
+                st.download_button(
+                    label="📥 Download Full PDF Report",
+                    data=pdf_bytes,
+                    file_name="TextCraft_Masterclass_Report.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary"
+                )
+            except Exception as e:
+                st.error(f"PDF তৈরি করতে সমস্যা হয়েছে: {e}")
+
+        st.markdown("---")
+
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "📊 1. Basic Info & 5W1H",
+            "📚 2. GRE Vocabulary",
+            "🔬 3. Clause X-Ray",
+            "🎓 4. Writing Program",
+            "🔄 5. Transformer Lab"
+        ])
 st.markdown("---")
 st.markdown("### 💬 Feedback")
 feedback = st.text_area("আপনার মতামত দিন (বাগ রিপোর্ট / ফিচার রিকোয়েস্ট):")

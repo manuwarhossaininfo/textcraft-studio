@@ -7,3 +7,4 @@ from .transformer import SentenceTransformer
 from .pdf_handler import PDFHandler
 from .url_handler import URLHandler
 from .utils import Utils
+from .pdf_generator import TextCraftPDFReport
