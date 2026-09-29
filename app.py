@@ -86,6 +86,29 @@ def render_header():
         </p>
     </div>
     """, unsafe_allow_html=True)
+# Share buttons
+st.markdown("""
+<div style="text-align: center; margin: 1rem 0;">
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https://manuwarhossaininfo-textcraft-studio-app-vqbkjx.streamlit.app/" 
+       target="_blank" 
+       style="background: #1877F2; color: white; padding: 8px 16px; 
+              border-radius: 5px; text-decoration: none; margin: 5px;">
+        📘 Share on Facebook
+    </a>
+    <a href="https://twitter.com/intent/tweet?text=Check%20out%20TextCraft%20Studio%20-%20Free%20AI%20Writing%20Masterclass!&url=https://manuwarhossaininfo-textcraft-studio-app-vqbkjx.streamlit.app/" 
+       target="_blank" 
+       style="background: #1DA1F2; color: white; padding: 8px 16px; 
+              border-radius: 5px; text-decoration: none; margin: 5px;">
+        🐦 Share on Twitter
+    </a>
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://manuwarhossaininfo-textcraft-studio-app-vqbkjx.streamlit.app/" 
+       target="_blank" 
+       style="background: #0A66C2; color: white; padding: 8px 16px; 
+              border-radius: 5px; text-decoration: none; margin: 5px;">
+        💼 Share on LinkedIn
+    </a>
+</div>
+""", unsafe_allow_html=True)
 
 
 def render_5w1h_tab(data):
@@ -973,3 +996,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+st.markdown("---")
+st.markdown("### 💬 Feedback")
+feedback = st.text_area("আপনার মতামত দিন (বাগ রিপোর্ট / ফিচার রিকোয়েস্ট):")
+if st.button("Submit Feedback"):
+    st.success("ধন্যবাদ! আপনার ফিডব্যাক পেয়েছি। 🙏")
