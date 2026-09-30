@@ -158,241 +158,170 @@ st.markdown("""
 
 
 def render_5w1h_tab(data):
-    """Render the exhaustive 5W1H, Idea Generation & Sentence Construction tab."""
+    """Visual information extraction — facts highlighted inside sentences."""
     if "error" in data:
-        st.error(f"Analysis Error: {data.get('error')}")
+        st.error(f"Error: {data.get('error')}")
         if "raw_response" in data:
-            with st.expander("📄 Raw Response"):
+            with st.expander("📄 Raw"):
                 st.text(data["raw_response"])
         return
 
-    # ── Title & Summary ──
+    # ── Header ──
     st.markdown(f"""
-    <div class="info-card animate-in">
-        <h3>📌 {data.get('title', 'Article Analysis')}</h3>
-        <p><strong>🇬🇧 English:</strong> {data.get('summary', 'N/A')}</p>
-        <p><strong>🇧🇩 বাংলা:</strong> {data.get('summary_bn', 'N/A')}</p>
+    <div class="info-card">
+        <h3>📌 {data.get('title', 'Article')}</h3>
+        <p>📊 {data.get('word_count', 0)} words | 📈 {data.get('reading_level', 'N/A')}</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Metrics ──
-    c1, c2, c3, c4, c5 = st.columns(5)
-    with c1: st.metric("📊 Words", data.get("word_count", "N/A"))
-    with c2: st.metric("📈 Level", data.get("reading_level", "N/A"))
-    with c3: st.metric("📰 Genre", data.get("genre", "N/A"))
-    with c4: st.metric("🎯 Tone", data.get("tone", "N/A"))
-    with c5: st.metric("👥 Audience", data.get("target_audience", "N/A")[:20])
+    # ── Color Legend ──
+    st.markdown("""
+    <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px 20px; margin: 15px 0; display: flex; gap: 25px; flex-wrap: wrap;">
+        <span style="font-size: 14px;">🎨 রঙের মানে:</span>
+        <span style="background: rgba(255,107,107,0.25); color: #FF6B6B; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🔴 কাঁচা তথ্য (Raw Info)</span>
+        <span style="background: rgba(77,163,255,0.2); color: #4da3ff; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🔵 যোগ করা সাজসজ্জা (Decoration)</span>
+        <span style="background: rgba(255,217,61,0.2); color: #ffd93d; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🟡 হুক (Hook)</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # ── 5W1H Deep Dive ──
-    st.subheader("🔍 5W1H Deep Information Matrix")
-    st.caption("প্রতিটি প্রশ্নের বিস্তারিত উত্তর — তথ্য, সম্পর্ক, প্রসঙ্গ সহ")
+    # ── Section 1: Raw Facts ──
+    st.subheader("📋 কাঁচা তথ্য (Raw Facts)")
+    st.caption("আর্টিকেল থেকে সব অলংকার সরিয়ে শুধু তথ্য")
 
-    five_w = data.get("five_w_one_h", {})
-    labels = {
-        "who": ("👤 WHO / কে জড়িত", "#FF6B6B"),
-        "what": ("📋 WHAT / কী ঘটেছে", "#4da3ff"),
-        "when": ("🕐 WHEN / কখন", "#ffd93d"),
-        "where": ("📍 WHERE / কোথায়", "#28a745"),
-        "why": ("❓ WHY / কেন", "#fd7e14"),
-        "how": ("⚙️ HOW / কীভাবে", "#a88beb")
-    }
+    facts = data.get("raw_facts", [])
+    facts_bn = data.get("raw_facts_bn", [])
 
-    for key, (label, color) in labels.items():
-        item = five_w.get(key, {})
-        if not isinstance(item, dict):
+    cols = st.columns(2)
+    for i, fact in enumerate(facts):
+        with cols[i % 2]:
+            bn = facts_bn[i] if i < len(facts_bn) else ""
+            st.markdown(f"""
+            <div style="background: rgba(255,107,107,0.08); border-left: 3px solid #FF6B6B; 
+                        border-radius: 6px; padding: 8px 12px; margin: 4px 0;">
+                <span style="color: #FF6B6B; font-weight: bold;">#{i+1}</span>
+                <span style="color: #d0d0d0;"> {fact}</span>
+                <br><span style="color: #888; font-size: 0.85rem;">🇧🇩 {bn}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Section 2: Fact → Sentence (THE MAIN VISUAL) ──
+    st.subheader("🔬 তথ্য → বাক্য: কীভাবে তথ্য বাক্যে রূপ নেয়")
+    st.caption("🔴 লাল = কাঁচা তথ্য | 🔵 নীল = সাজসজ্জা | দেখুন কীভাবে তথ্য বড় হয়েছে")
+
+    mappings = data.get("fact_to_sentence", [])
+    for i, m in enumerate(mappings, 1):
+        fact = m.get("fact", "")
+        fact_bn = m.get("fact_bn", "")
+        sentence = m.get("full_sentence", "")
+        info_words = m.get("info_words", [])
+        added_words = m.get("added_words", [])
+        role = m.get("role", "")
+        role_bn = m.get("role_bn", "")
+
+        # Build highlighted sentence HTML
+        highlighted = _highlight_sentence(sentence, info_words, added_words)
+
+        # Role badge color
+        role_colors = {
+            "hook": "#ffd93d", "support": "#28a745", "conclusion": "#a88beb",
+            "context": "#4da3ff", "contrast": "#fd7e14", "data": "#17a2b8"
+        }
+        rc = role_colors.get(role.lower(), "#888")
+
+        st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: #FF6B6B; font-weight: bold; font-size: 1rem;">📌 তথ্য #{i}: {fact}</span>
+                <span style="background: {rc}22; color: {rc}; padding: 2px 10px; border-radius: 10px; font-size: 0.8rem; font-weight: bold;">{role_bn}</span>
+            </div>
+            <div style="color: #888; font-size: 0.85rem; margin-bottom: 8px;">🇧🇩 {fact_bn}</div>
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; line-height: 2; font-size: 1rem;">
+                {highlighted}
+            </div>
+            <div style="margin-top: 8px; font-size: 0.8rem; color: #666;">
+                🔴 তথ্যের শব্দ: {', '.join(info_words[:8])} &nbsp;|&nbsp; 
+                🔵 সাজসজ্জা: {', '.join(added_words[:8])}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Section 3: Idea Flow ──
+    st.subheader("💡 Idea Flow — তথ্য মিলে ধারণা তৈরি")
+    st.caption("কোন তথ্যগুলো একসাথে মিলে কী ধারণা বানাচ্ছে")
+
+    ideas = data.get("idea_flow", [])
+    for i, idea in enumerate(ideas, 1):
+        facts_used = idea.get("facts_used", [])
+        st.markdown(f"""
+        <div style="background: rgba(40,167,69,0.08); border-left: 3px solid #28a745; 
+                    border-radius: 8px; padding: 10px 15px; margin: 6px 0;">
+            <span style="color: #28a745; font-weight: bold;">💡 Idea {i}:</span>
+            <span style="color: #d0d0d0;"> {idea.get('idea', '')}</span>
+            <br><span style="color: #888; font-size: 0.85rem;">🇧🇩 {idea.get('idea_bn', '')}</span>
+            <br><span style="color: #4da3ff; font-size: 0.8rem;">📎 তথ্য: {' + '.join(facts_used)}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Section 4: Hook Analysis ──
+    st.subheader("🪝 Hook — কীভাবে তথ্য দিয়ে পাঠক ধরা হয়")
+
+    hooks = data.get("hook_analysis", [])
+    if hooks:
+        for h in hooks:
+            h_type = h.get("hook_type_bn", h.get("hook_type", ""))
+            st.markdown(f"""
+            <div style="background: rgba(255,217,61,0.08); border-left: 3px solid #ffd93d; 
+                        border-radius: 8px; padding: 12px 15px; margin: 6px 0;">
+                <span style="color: #ffd93d; font-weight: bold;">🪝 {h_type}</span>
+                <p style="color: #d0d0d0; margin: 5px 0; font-style: italic;">"{h.get('hook_sentence', '')}"</p>
+                <span style="color: #FF6B6B; font-size: 0.85rem;">📌 কাঁচা তথ্য: {h.get('fact', '')}</span>
+                <br><span style="color: #888; font-size: 0.8rem;">🇧🇩 {h.get('fact_bn', '')}</span>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No hook data available.")
+
+
+def _highlight_sentence(sentence: str, info_words: list, added_words: list) -> str:
+    """Highlight info words in red and added words in blue within a sentence."""
+    import re as _re
+
+    if not sentence:
+        return ""
+
+    result = sentence
+
+    # Highlight info words (red)
+    for word in info_words:
+        if not word or len(word) < 2:
             continue
+        pattern = _re.compile(r'(\b' + _re.escape(word) + r'\b)', _re.IGNORECASE)
+        result = pattern.sub(
+            r'<span style="background: rgba(255,107,107,0.3); color: #FF6B6B; padding: 1px 4px; border-radius: 3px; font-weight: bold;">\1</span>',
+            result,
+            count=1
+        )
 
-        eng = item.get("english", "N/A")
-        bn = item.get("bangla", "N/A")
+    # Highlight added words (blue)
+    for word in added_words:
+        if not word or len(word) < 2:
+            continue
+        pattern = _re.compile(r'(\b' + _re.escape(word) + r'\b)', _re.IGNORECASE)
+        result = pattern.sub(
+            r'<span style="background: rgba(77,163,255,0.2); color: #4da3ff; padding: 1px 4px; border-radius: 3px;">\1</span>',
+            result,
+            count=1
+        )
 
-        st.markdown(f"""
-        <div class="w5h1-card" style="border-left-color: {color}; margin-bottom: 1rem;">
-            <div class="w5h1-label" style="color: {color}; font-size: 1.1rem;">{label}</div>
-            <p style="color: #d0d0d0; line-height: 1.8;">🇬🇧 {eng}</p>
-            <p style="color: #a0a0a0; line-height: 1.8; font-style: italic;">🇧🇩 {bn}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Sub-details
-        sub_cols = st.columns(2)
-        with sub_cols[0]:
-            if item.get("key_entities"):
-                st.markdown("**🏷️ Key Entities:**")
-                for e in item["key_entities"]:
-                    st.markdown(f"  • {e}")
-            if item.get("key_events"):
-                st.markdown("**📌 Key Events:**")
-                for e in item["key_events"]:
-                    st.markdown(f"  • {e}")
-            if item.get("timeline"):
-                st.markdown("**📅 Timeline:**")
-                for t in item["timeline"]:
-                    st.markdown(f"  • {t}")
-            if item.get("locations"):
-                st.markdown("**📍 Locations:**")
-                for l in item["locations"]:
-                    st.markdown(f"  • {l}")
-            if item.get("root_causes"):
-                st.markdown("**🔥 Root Causes:**")
-                for r in item["root_causes"]:
-                    st.markdown(f"  • {r}")
-            if item.get("processes"):
-                st.markdown("**⚙️ Processes:**")
-                for p in item["processes"]:
-                    st.markdown(f"  • {p}")
-
-        with sub_cols[1]:
-            if item.get("relationships"):
-                st.markdown(f"**🔗 Relationships:** {item['relationships']}")
-            if item.get("central_conflict"):
-                st.markdown(f"**⚔️ Central Conflict:** {item['central_conflict']}")
-                st.markdown(f"🇧🇩 {item.get('central_conflict_bn', '')}")
-            if item.get("historical_context"):
-                st.markdown(f"**📜 Historical Context:** {item['historical_context']}")
-                st.markdown(f"🇧🇩 {item.get('historical_context_bn', '')}")
-            if item.get("geopolitical_context"):
-                st.markdown(f"**🌐 Geopolitical:** {item['geopolitical_context']}")
-                st.markdown(f"🇧🇩 {item.get('geopolitical_context_bn', '')}")
-            if item.get("hidden_motivations"):
-                st.markdown(f"**🕵️ Hidden Motivations:** {item['hidden_motivations']}")
-                st.markdown(f"🇧🇩 {item.get('hidden_motivations_bn', '')}")
-            if item.get("data_points"):
-                st.markdown("**📊 Data Points:**")
-                for d in item["data_points"]:
-                    st.markdown(f"  • {d}")
-
-        st.markdown("---")
-
-    # ── Core Thesis ──
-    st.subheader("🎯 Core Thesis & Focus")
-    thesis = data.get("core_thesis", {})
-
-    st.markdown(f"""
-    <div class="info-card">
-        <h3>💡 Main Argument</h3>
-        <p>🇬🇧 {thesis.get('main_argument', 'N/A')}</p>
-        <p style="color: #a0a0a0;">🇧🇩 {thesis.get('main_argument_bn', 'N/A')}</p>
-        <p style="color: #888; font-size: 0.85rem;">📍 Thesis Position: {thesis.get('thesis_position', 'N/A')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="info-card">
-        <h3>🔗 Focus Maintenance Strategy</h3>
-        <p>🇬🇧 {thesis.get('focus_maintenance', 'N/A')}</p>
-        <p style="color: #a0a0a0;">🇧🇩 {thesis.get('focus_maintenance_bn', 'N/A')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if thesis.get("supporting_points"):
-        st.markdown("**📌 Supporting Points:**")
-        for pt in thesis["supporting_points"]:
-            st.markdown(f"  ✅ {pt}")
-
-    if thesis.get("counterarguments"):
-        st.markdown("**🔄 Counterarguments Addressed:**")
-        for ca in thesis["counterarguments"]:
-            st.markdown(f"  ⚡ {ca}")
-
-    st.markdown(f"""
-    <div class="info-card">
-        <h3>🗣️ Rhetorical Strategy</h3>
-        <p>🇬🇧 {thesis.get('rhetorical_strategy', 'N/A')}</p>
-        <p style="color: #a0a0a0;">🇧🇩 {thesis.get('rhetorical_strategy_bn', 'N/A')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # ── Idea Generation Map (NEW!) ──
-    st.subheader("🧠 Idea Generation Map — ধারণা কীভাবে তৈরি হয়েছে")
-    idea_map = data.get("idea_generation_map", {})
-
-    st.markdown(f"""
-    <div class="info-card">
-        <p>🇬🇧 {idea_map.get('description', 'N/A')}</p>
-        <p style="color: #a0a0a0;">🇧🇩 {idea_map.get('description_bn', 'N/A')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if idea_map.get("idea_flow"):
-        st.markdown("**📶 Idea Flow Stages:**")
-        for stage in idea_map["idea_flow"]:
-            with st.expander(f"🔹 {stage.get('stage', '')}"):
-                st.markdown(f"**Idea:** {stage.get('idea', '')}")
-                st.markdown(f"**🇧🇩:** {stage.get('idea_bn', '')}")
-                st.markdown(f"**Technique:** {stage.get('technique', '')}")
-                st.markdown(f"**🇧🇩:** {stage.get('technique_bn', '')}")
-
-    if idea_map.get("paragraph_to_idea_mapping"):
-        st.markdown("**📄 Paragraph → Idea Mapping:**")
-        for mapping in idea_map["paragraph_to_idea_mapping"]:
-            st.markdown(f"  📌 {mapping}")
-
-    st.markdown("---")
-
-    # ── Sentence Construction Analysis (NEW!) ──
-    st.subheader("🏗️ Sentence Construction — কীভাবে বাক্য তৈরি হচ্ছে")
-    sca = data.get("sentence_construction_analysis", {})
-
-    st.markdown(f"""
-    <div class="info-card">
-        <p>🇬🇧 {sca.get('description', 'N/A')}</p>
-        <p style="color: #a0a0a0;">🇧🇩 {sca.get('description_bn', 'N/A')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if sca.get("construction_patterns"):
-        st.markdown("**🔧 Construction Patterns:**")
-        for pattern in sca["construction_patterns"]:
-            with st.expander(f"🔸 {pattern.get('pattern_name', '')} | {pattern.get('pattern_name_bn', '')}"):
-                st.markdown(f"**Raw Fact:** {pattern.get('raw_fact', '')}")
-                st.markdown(f"**Constructed Sentence:** *{pattern.get('constructed_sentence', '')}*")
-                st.markdown("**Construction Steps:**")
-                steps_en = pattern.get("construction_steps", [])
-                steps_bn = pattern.get("construction_steps_bn", [])
-                for i, step in enumerate(steps_en):
-                    bn = steps_bn[i] if i < len(steps_bn) else ""
-                    st.markdown(f"  {step}")
-                    if bn:
-                        st.markdown(f"  🇧🇩 *{bn}*")
-
-    if sca.get("idea_to_sentence_pipeline"):
-        st.markdown(f"""
-        <div class="info-card" style="border-left: 4px solid #ffd93d;">
-            <h3>🔄 Idea → Sentence Pipeline</h3>
-            <p>🇬🇧 {sca['idea_to_sentence_pipeline']}</p>
-            <p style="color: #a0a0a0;">🇧🇩 {sca.get('idea_to_sentence_pipeline_bn', '')}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # ── Basic Facts ──
-    st.subheader("📋 Basic Facts (অলংকার ছাড়া মূল তথ্য)")
-    col_en, col_bn = st.columns(2)
-    with col_en:
-        st.markdown("**🇬🇧 English:**")
-        for fact in data.get("basic_facts", []):
-            st.markdown(f"  ✦ {fact}")
-    with col_bn:
-        st.markdown("**🇧🇩 বাংলা:**")
-        for fact in data.get("basic_facts_bn", []):
-            st.markdown(f"  ✦ {fact}")
-
-    # ── Key Takeaways ──
-    if data.get("key_takeaways"):
-        st.markdown("---")
-        st.subheader("🎓 Key Takeaways")
-        col_en, col_bn = st.columns(2)
-        with col_en:
-            for tk in data["key_takeaways"]:
-                st.markdown(f"  💡 {tk}")
-        with col_bn:
-            for tk in data.get("key_takeaways_bn", []):
-                st.markdown(f"  💡 {tk}")
+    return result
 
 
 def render_vocabulary_tab(data):
